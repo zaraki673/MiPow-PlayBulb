@@ -10,13 +10,14 @@
 		<param field="Address" label="MAC Address" width="150px" required="true"/>
 		<param field="Mode1" label="Model" width="100px">
 			<options>
-				<option label="Candle (fw:BTL300_v5 et v6)" value="1" default="true" />
+				<option label="Candle (fw:BTL300_v5)" value="1" default="true" />
 				<option label="Garden (fw:BTL400m_1.9)" value="2"/>
 				<option label="Rainbow (fw:BTL300_v5)" value="3"/>
 				<option label="Color (fw:BTL100C_v6)" value="4"/>
 				<option label="Comet (fw:)" value="5"/>
 				<option label="Sphere/Smart" value="6"/>
 				<option label="Spot (fw:BTL203M_V1.6)(" value="7"/>
+				<option label="Candle (fw:BTL300_v6)" value="8"/>
 			</options>
 		</param>
 		<param field="Mode3" label="Activate Status" width="75px">
@@ -144,6 +145,11 @@ class BasePlugin:
 			handleEffect = 0x0023
 			handleBattery = 0
 			handleFW=0x0027
+		if (Parameters["Mode1"]== '8') :  # Candle btl300_v6
+			handleColor = 0x0019
+			handleEffect = 0x0017
+			handleBattery = 0
+			handleFW=0x002A
 		# renseigne le device avec l adresse mac et le numero de l interface BT 
 		bulb = mipow(Parameters["Address"], Parameters["Mode2"])
 		#se connecte au Candle / Rainbow / Garden
@@ -570,7 +576,7 @@ class mipow:
 		self.device.disconnect()
 		
 	def send_packet(self, white, red, green, blue, mode, speed):
-		if (Parameters["Mode1"]== '1') or (Parameters["Mode1"]== '6') or (Parameters["Mode1"]== '7'): # Candles Sphere  spot ?
+		if (Parameters["Mode1"]== '1') or (Parameters["Mode1"]== '6') or (Parameters["Mode1"]== '7') or (Parameters["Mode1"]== '8'): # Candles Sphere  spot ?
 			if (speed != 0) :
 				data = bytearray([white, red, green, blue, mode, 0, speed, 0])
 				handleId = handleEffect
