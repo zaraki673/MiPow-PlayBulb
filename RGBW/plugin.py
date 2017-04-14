@@ -16,6 +16,7 @@
 				<option label="Color (fw:BTL100C_v6)" value="4"/>
 				<option label="Comet (fw:)" value="5"/>
 				<option label="Sphere/Smart" value="6"/>
+				<option label="Spot (fw:BTL203M_V1.6)(" value="7"/>
 			</options>
 		</param>
 		<param field="Mode3" label="Activate Status" width="75px">
@@ -136,6 +137,11 @@ class BasePlugin:
 		if (Parameters["Mode1"]== '6') :  # Sphere/Smart
 			handleColor = 0x001B
 			handleEffect = 0x0019
+			handleBattery = 0
+			handleFW=0x0027
+		if (Parameters["Mode1"]== '7') :  # Spot
+			handleColor = 0x0025
+			handleEffect = 0x0023
 			handleBattery = 0
 			handleFW=0x0027
 		# renseigne le device avec l adresse mac et le numero de l interface BT 
@@ -564,7 +570,7 @@ class mipow:
 		self.device.disconnect()
 		
 	def send_packet(self, white, red, green, blue, mode, speed):
-		if (Parameters["Mode1"]== '1') or (Parameters["Mode1"]== '6') : # Candles Sphere
+		if (Parameters["Mode1"]== '1') or (Parameters["Mode1"]== '6') or (Parameters["Mode1"]== '7'): # Candles Sphere  spot ?
 			if (speed != 0) :
 				data = bytearray([white, red, green, blue, mode, 0, speed, 0])
 				handleId = handleEffect
