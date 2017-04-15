@@ -569,7 +569,7 @@ class mipow:
 			self.device = btle.Peripheral(self.mac, addrType=btle.ADDR_TYPE_PUBLIC, iface=int(self.BtHW))
 			self.device.setDelegate(Delegate(self))
 			
-		except btle.BTLEException as err::
+		except btle.BTLEException as err:
 			Domoticz.Log('Error connecting device - is it up ? (btle error code : %d)' % (err.code) )
 			return
 
