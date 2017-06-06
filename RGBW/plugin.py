@@ -5,7 +5,7 @@
 #					 https://github.com/Phhere/Playbulb
 #
 """
-<plugin key="MiPow" name="Mipow PlayBulb" author="zaraki673" version="1.0.1" wikilink="http://www.domoticz.com/wiki/Plugins/PlayBulb" externallink="http://www.playbulb.com">
+<plugin key="MiPowRGB" name="Mipow PlayBulb RGBW" author="zaraki673" version="1.0.1" wikilink="http://www.domoticz.com/wiki/Plugins/PlayBulb" externallink="http://www.playbulb.com">
 	<params>
 		<param field="Address" label="MAC Address" width="150px" required="true"/>
 		<param field="Mode1" label="Model" width="100px">
@@ -51,7 +51,7 @@ from bluepy import btle
 
 
 class BasePlugin:
-
+	enabled = False
 	
 	def __init__(self):
 		return
@@ -166,11 +166,11 @@ class BasePlugin:
 		Domoticz.Log("Plugin is stopping.")
 
 	# present de base 
-	def onConnect(self, Status, Description):
+	def onConnect(self, Connection, Status, Description):
 		return
 
 	# present de base 
-	def onMessage(self, Data, Status, Extra):
+	def onMessage(self, Connection, Data, Status, Extra):
 		return
 
 	# present de base action executer qd une commande est passé a Domoticz
@@ -366,7 +366,7 @@ class BasePlugin:
 		UpdateAllDevice()
 		return True
 
-	def onDisconnect(self):
+	def onDisconnect(self, Connection):
 		return
 
 	def onHeartbeat(self):
@@ -398,34 +398,31 @@ def onStop():
 	global _plugin
 	_plugin.onStop()
 
-def onConnect(Status, Description):
+def onConnect(Connection, Status, Description):
 	global _plugin
-	_plugin.onConnect(Status, Description)
+	_plugin.onConnect(Connection, Status, Description)
 
-def onMessage(Data, Status, Extra):
+def onMessage(Connection, Data, Status, Extra):
 	global _plugin
-	_plugin.onMessage(Data, Status, Extra)
+	_plugin.onMessage(Connection, Data, Status, Extra)
 
 def onCommand(Unit, Command, Level, Hue):
 	global _plugin
 	_plugin.onCommand(Unit, Command, Level, Hue)
 
-def onDisconnect():
+def onNotification(Name, Subject, Text, Status, Priority, Sound, ImageFile):
 	global _plugin
-	_plugin.onDisconnect()
+	_plugin.onNotification(Name, Subject, Text, Status, Priority, Sound, ImageFile)
+
+def onDisconnect(Connection):
+	global _plugin
+	_plugin.onDisconnect(Connection)
 
 def onHeartbeat():
 	global _plugin
 	_plugin.onHeartbeat()
 
-# xml built in parser threw import error on expat so just do it manually
-def extractTagValue(tagName, XML):
-	startPos = XML.find(tagName)
-	endPos = XML.find(tagName, startPos+1)
-	if ((startPos == -1) or (endPos == -1)): Domoticz.Error("'"+tagName+"' not found in supplied XML")
-	return XML[startPos+len(tagName)+1:endPos-2]
-
-# Generic helper functions
+	# Generic helper functions
 def DumpConfigToLog():
 	for x in Parameters:
 		if Parameters[x] != "":
@@ -438,7 +435,7 @@ def DumpConfigToLog():
 		Domoticz.Debug("Device nValue:	" + str(Devices[x].nValue))
 		Domoticz.Debug("Device sValue:   '" + Devices[x].sValue + "'")
 		Domoticz.Debug("Device LastLevel: " + str(Devices[x].LastLevel))
-	return	
+	return
 
 def MajDevice(Unit, nValue, sValue):
 	# Make sure that the Domoticz device still exists (they can be deleted) before updating it 
