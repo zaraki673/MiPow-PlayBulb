@@ -371,8 +371,9 @@ class BasePlugin:
 
 	def onHeartbeat(self):
 		global bulbbattery
-		bulbbattery = bulb.get_state(handleBattery)
-		if Parameters["Mode3"] == "1" and (int(bulbbattery[0]) != 0):
+		if handleBattery != "0":
+			bulbbattery = bulb.get_state(handleBattery)
+		if Parameters["Mode3"] == "1":
 			CheckStatus()
 			UpdateAllDevice()
 		return True
