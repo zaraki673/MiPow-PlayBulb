@@ -5,7 +5,7 @@
 #					 https://github.com/Phhere/Playbulb
 #
 """
-<plugin key="MiPowCP" name="Mipow PlayBulb ColorPicker" author="zaraki673" version="1.0.0" wikilink="http://www.domoticz.com/wiki/Plugins/PlayBulb" externallink="http://www.playbulb.com">
+<plugin key="MiPowCP" name="Mipow PlayBulb ColorPicker" author="zaraki673" version="1.0.1" wikilink="http://www.domoticz.com/wiki/Plugins/PlayBulb" externallink="http://www.playbulb.com">
 	<params>
 		<param field="Address" label="MAC Address" width="150px" required="true"/>
 		<param field="Mode1" label="Model" width="100px">
