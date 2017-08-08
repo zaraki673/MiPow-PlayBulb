@@ -170,7 +170,7 @@ class BasePlugin:
 		return
 
 	# present de base 
-	def onMessage(self, Connection, Data, Status, Extra):
+	def onMessage(self, Connection, Data):
 		return
 
 	# present de base action executer qd une commande est passé a Domoticz
@@ -403,9 +403,9 @@ def onConnect(Connection, Status, Description):
 	global _plugin
 	_plugin.onConnect(Connection, Status, Description)
 
-def onMessage(Connection, Data, Status, Extra):
+def onMessage(Connection, Data):
 	global _plugin
-	_plugin.onMessage(Connection, Data, Status, Extra)
+	_plugin.onMessage(Connection, Data)
 
 def onCommand(Unit, Command, Level, Hue):
 	global _plugin
