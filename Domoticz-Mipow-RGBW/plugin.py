@@ -8,8 +8,12 @@
 #install bluepy first (https://github.com/IanHarvey/bluepy  - install it from source)
 #then you should need to make a symlink : sudo ln -s /usr/local/lib/python3.5/dist-packages/bluepy /usr/lib/python3.5/
 #
+#Check mac address with : sudo hcitool lescan
+#(and if your device is available else turn it off and on )
+#
+#
 """
-<plugin key="MiPowRGB" name="Mipow PlayBulb RGBW" author="zaraki673" version="1.0.1" wikilink="http://www.domoticz.com/wiki/Plugins/PlayBulb" externallink="http://www.playbulb.com">
+<plugin key="MiPowRGB" name="Mipow PlayBulb RGBW" author="zaraki673" version="1.0.2" wikilink="http://www.domoticz.com/wiki/Plugins/PlayBulb" externallink="http://www.playbulb.com">
 	<params>
 		<param field="Address" label="MAC Address" width="150px" required="true"/>
 		<param field="Mode1" label="Model" width="100px">
