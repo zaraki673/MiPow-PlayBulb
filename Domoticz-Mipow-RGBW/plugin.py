@@ -4,6 +4,10 @@
 #			source : https://github.com/papagei9/python-mipow
 #					 https://github.com/Phhere/Playbulb
 #
+#
+#install bluepy first (https://github.com/IanHarvey/bluepy  - install it from source)
+#then you should need to make a symlink : sudo ln -s /usr/local/lib/python3.5/dist-packages/bluepy /usr/lib/python3.5/
+#
 """
 <plugin key="MiPowRGB" name="Mipow PlayBulb RGBW" author="zaraki673" version="1.0.1" wikilink="http://www.domoticz.com/wiki/Plugins/PlayBulb" externallink="http://www.playbulb.com">
 	<params>
@@ -57,19 +61,22 @@ class BasePlugin:
 		return
 
 	def onStart(self):
-		global state
-		global effects
-		global handleColor
-		global handleEffect
-		global handleBattery
-		global Sred
-		global Sgreen
-		global Sblue
-		global Swhite
-		global Smode
-		global Sspeed
-		global bulb
-
+		self.state = 0
+		self.effects = 0
+		self.handleColor = 0
+		self.handleEffect = 0
+		self.handleBattery = 0
+		self.Sred = 0
+		self.Sgreen = 0
+		self.Sblue = 0
+		self.Swhite = 0
+		self.Smode = 0
+		self.Sspeed = 0
+		#self.bulb = bulb
+		self.bulbbattery= [0,0]
+		self.brightness = 0
+		self.color = 0
+		self.isConnect=False
 
 		if Parameters["Mode6"] == "Debug":
 			Domoticz.Debugging(1)
@@ -87,14 +94,6 @@ class BasePlugin:
 			#Options = "LevelActions:"+stringToBase64("||||")+";LevelNames:"+stringToBase64("Off|Slowest|Slower|Faster|Fastest")+";LevelOffHidden:ZmFsc2U=;SelectorStyle:MA=="
 			Options = {"LevelActions": "||||","LevelNames": "Slowest|Slower|Faster|Fastest","LevelOffHidden": "True","SelectorStyle": "0"}
 			Domoticz.Device(Name="Speed",  Unit=8, TypeName="Selector Switch", Switchtype=18, Image=12, Options=Options).Create()
-			Smode = 0
-			Sspeed = 0
-			state = 0
-			effects = 0 
-			Swhite = 0
-			Sred = 0
-			Sgreen = 0
-			Sblue = 0
 			Domoticz.Log("Devices created.")
 		# recupere le status de chaques switch
 		else:
@@ -104,56 +103,62 @@ class BasePlugin:
 					Smode = 0
 				else:
 					Smode = int((Devices[2].nValue/10)-1)
-			if (3 in Devices): Sred = Devices[3].LastLevel
-			if (4 in Devices): Sgreen = Devices[4].LastLevel
-			if (5 in Devices): Sblue = Devices[5].LastLevel
-			if (6 in Devices): Swhite = Devices[6].LastLevel
-			if (7 in Devices): Sspeed = Devices[7].LastLevel
+			if (3 in Devices): self.Sred = Devices[3].LastLevel
+			if (4 in Devices): self.Sgreen = Devices[4].LastLevel
+			if (5 in Devices): self.Sblue = Devices[5].LastLevel
+			if (6 in Devices): self.Swhite = Devices[6].LastLevel
+			if (7 in Devices): self.Sspeed = Devices[7].LastLevel
 		# defini les handles en fonction du protocole utilisé
 		if (Parameters["Mode1"]== '1') : # candles
-			handleColor = 0x0016
-			handleEffect = 0x0014
-			handleBattery = 0x001f
-			handleFW=0x0027
+			self.handleColor = 0x0016
+			self.handleEffect = 0x0014
+			self.handleBattery = 0x001f
+			self.handleFW=0x0027
 		if (Parameters["Mode1"]== '2') :  # garden
-			handleColor = 0x0023
-			handleEffect = 0x0021
-			handleBattery = 0x002e
-			handleFW=0x0027
+			self.handleColor = 0x0023
+			self.handleEffect = 0x0021
+			self.handleBattery = 0x002e
+			self.handleFW=0x0027
 		if (Parameters["Mode1"]== '3') :  # Rainbow
-			handleColor = 0x0018
-			handleEffect = 0x0016
-			handleBattery = 0
-			handleFW=0x0027
+			self.handleColor = 0x0018
+			self.handleEffect = 0x0016
+			self.handleBattery = 0
+			self.handleFW=0x0027
 		if (Parameters["Mode1"]== '4') :  # Color
-			handleColor = 0x0018
-			handleEffect = 0x0016
-			handleBattery = 0
-			handleFW=0x0029
+			self.handleColor = 0x0018
+			self.handleEffect = 0x0016
+			self.handleBattery = 0
+			self.handleFW=0x0029
 		if (Parameters["Mode1"]== '5') :  # Comet
-			handleColor = 0x0023
-			handleEffect = 0x0021
-			handleBattery = 0
-			handleFW=0x0027
+			self.handleColor = 0x0023
+			self.handleEffect = 0x0021
+			self.handleBattery = 0
+			self.handleFW=0x0027
 		if (Parameters["Mode1"]== '6') :  # Sphere/Smart
-			handleColor = 0x001B
-			handleEffect = 0x0019
-			handleBattery = 0
-			handleFW=0x0027
+			self.handleColor = 0x001B
+			self.handleEffect = 0x0019
+			self.handleBattery = 0
+			self.handleFW=0x0027
 		if (Parameters["Mode1"]== '7') :  # Spot
-			handleColor = 0x0025
-			handleEffect = 0x0023
-			handleBattery = 0
-			handleFW=0x0027
+			self.handleColor = 0x0025
+			self.handleEffect = 0x0023
+			self.handleBattery = 0
+			self.handleFW=0x0027
 		if (Parameters["Mode1"]== '8') :  # Candle btl300_v6
-			handleColor = 0x0019
-			handleEffect = 0x0017
-			handleBattery = 0
-			handleFW=0x002A
+			self.handleColor = 0x0019
+			self.handleEffect = 0x0017
+			self.handleBattery = 0
+			self.handleFW=0x002A
 		# renseigne le device avec l adresse mac et le numero de l interface BT 
-		bulb = mipow(Parameters["Address"], Parameters["Mode2"])
+		self.Bulb = mipow(Parameters["Address"], Parameters["Mode2"])
 		#se connecte au Candle / Rainbow / Garden
-		bulb.connect()
+		try :
+			self.Bulb.connect()
+			self.isConnect=True
+			Domoticz.Log("is connect.")
+		except :
+			self.isConnect=False
+			Domoticz.Log("Not connect.")
 		# present de base 
 		DumpConfigToLog()
 		Domoticz.Log("Plugin is started.")
@@ -162,7 +167,8 @@ class BasePlugin:
 	# present de base 
 	def onStop(self):
 		#se deconnecte du Candle / Rainbow / Garden
-		bulb.disconnect()
+		if self.isConnect == True :
+			self.Bulb.disconnect()
 		Domoticz.Log("Plugin is stopping.")
 
 	# present de base 
@@ -175,21 +181,6 @@ class BasePlugin:
 
 	# present de base action executer qd une commande est passé a Domoticz
 	def onCommand(self, Unit, Command, Level, Hue):
-		global brightness
-		global color
-		global Sred
-		global Sgreen
-		global Sblue
-		global Swhite
-		global Smode
-		global Sspeed
-		Domoticz.Debug ('DEBUG : white before command is set %s' % str(Swhite))
-		Domoticz.Debug ('DEBUG : red before command is set %s' % str(Sred))
-		Domoticz.Debug ('DEBUG : green before command is set %s' % str(Sgreen))
-		Domoticz.Debug ('DEBUG : blue before command is set %s' % str(Sblue))
-		Domoticz.Debug ('DEBUG : mode before command is set %s' % str(Smode))
-		Domoticz.Debug ('DEBUG : speed before command is set %s' % str(Sspeed))
-		#si debug activé affiche un message dans les logs de domoticz
 		Domoticz.Debug("DEBUG : onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
 		# present de base 
 		Command = Command.strip()
@@ -201,192 +192,194 @@ class BasePlugin:
 			#recupere l'état du switch
 			# Si action = on
 			if (action == 'On'):
-				Sred = 255
-				Sgreen = 255
-				Sblue = 255
-				Swhite = 255
+				self.Sred = 255
+				self.Sgreen = 255
+				self.Sblue = 255
+				self.Swhite = 255
 				#Domoticz.Debug('DEBUG : Action set On' )
 			if (action == 'Off'):
-				Sred = 0
-				Sgreen = 0
-				Sblue = 0
-				Swhite = 0
-				if Smode != 0 :
-					Smode = 0
-					Sspeed = 0
+				self.Sred = 0
+				self.Sgreen = 0
+				self.Sblue = 0
+				self.Swhite = 0
+				if self.Smode != 0 :
+					self.Smode = 0
+					self.Sspeed = 0
 				#Domoticz.Debug('DEBUG : Action set Off' )
 			try:
-				bulb.send_packet(Swhite, Sred, Sgreen, Sblue, Smode, Sspeed)
-			except btle.BTLEException as err:
-				Domoticz.Log('ERROR when setting plug %s with command %s color  %s (code %d)' % (Parameters["Address"], str(Command), str(Level) , err.code))
+				self.Bulb.send_packet(self.Swhite, self.Sred, self.Sgreen, self.Sblue, self.Smode, self.Sspeed, self.handleEffect, self.handleColor)
+			except : 
+				Domoticz.Log("ERROR when setting plug On or Off")
 
 		if (Unit == 2):
 			if (Level == 0) :
 				Domoticz.Debug("Set to Off")
 				#CheckStatus()
-				Smode=0
-				Sspeed = 0
+				self.Smode=0
+				self.Sspeed = 0
 				#UpdateAllDevice()
-				MajDevice(2,0, 'off')
+				MajDevice(self, 2,0, 'off')
 			if (Level == 10) :
 				Domoticz.Debug("Set to Flash")
-				Smode=0
-				if Sspeed == 0 :
-					Sspeed = 100
-				MajDevice(2,1, 10)
+				self.Smode=0
+				if self.Sspeed == 0 :
+					self.Sspeed = 100
+				MajDevice(self, 2,1, 10)
 			if (Level == 20) :
 				Domoticz.Debug("Set to Pusle")
-				Smode=1
-				if Sspeed == 0 :
-					Sspeed = 100
-				MajDevice(2,1, 20)
+				self.Smode=1
+				if self.Sspeed == 0 :
+					self.Sspeed = 100
+				MajDevice(self, 2,1, 20)
 			if (Level == 30) :
 				Domoticz.Debug("Set to Rainbow")
-				Smode=2
-				if Sspeed == 0 :
-					Sspeed = 100
-				MajDevice(2,1, 30)
+				self.Smode=2
+				if self.Sspeed == 0 :
+					self.Sspeed = 100
+				MajDevice(self, 2,1, 30)
 			if (Level == 40) :
 				Domoticz.Debug("Set to Fire")
-				Smode=3
-				if Sspeed == 0 :
-					Sspeed = 100
-				MajDevice(2,1, 40)
+				self.Smode=3
+				if self.Sspeed == 0 :
+					self.Sspeed = 100
+				MajDevice(self, 2,1, 40)
 			if (Level == 50) :
 				Domoticz.Debug("Set to Fire")
-				Smode=4
-				if Sspeed == 0 :
-					Sspeed = 100
-				MajDevice(2,1, 50)
+				self.Smode=4
+				if self.Sspeed == 0 :
+					self.Sspeed = 100
+				MajDevice(self, 2,1, 50)
 			try:
-				bulb.send_packet(Swhite, Sred, Sgreen, Sblue, Smode, Sspeed)
-			except btle.BTLEException as err:
-				Domoticz.Log('ERROR when setting plug %s with command %s color  %s (code %d)' % (Parameters["Address"], str(Command), str(Level) , err.code))
+				self.Bulb.send_packet(self.Swhite, self.Sred, self.Sgreen, self.Sblue, self.Smode, self.Sspeed, self.handleEffect, self.handleColor)
+			except : 
+				Domoticz.Log("ERROR when setting plug status")
 
 		if (Unit == 3):
 			if (action == 'On'):
-				Sred = int((Devices[Unit].LastLevel)/100*255)
+				self.Sred = int((Devices[Unit].LastLevel)/100*255)
 			if (action == 'Off'):
-				Sred = 0
+				self.Sred = 0
 			if (Command == 'Set Level'):
-				Sred = int(Level/100*255)
-			Domoticz.Debug('DEBUG : Red Color is set %s' % str(Sred))
+				self.Sred = int(Level/100*255)
+			Domoticz.Debug("DEBUG : Red Color is set " + str(self.Sred))
 			try:
-				bulb.send_packet(Swhite, Sred, Sgreen, Sblue, Smode, Sspeed)
-			except btle.BTLEException as err:
-				Domoticz.Log('ERROR when setting plug %s with command %s color  %s (code %d)' % (Parameters["Address"], str(Command), str(Level) , err.code))
+				self.Bulb.send_packet(self.Swhite, self.Sred, self.Sgreen, self.Sblue, self.Smode, self.Sspeed, self.handleEffect, self.handleColor)
+			except : 
+				Domoticz.Log("ERROR when setting plug Red")
 
 		if (Unit == 4):
 			if (action == 'On'):
-				Sgreen = int((Devices[Unit].LastLevel)/100*255)
+				self.Sgreen = int((Devices[Unit].LastLevel)/100*255)
 			if (action == 'Off'):
-				Sgreen = 0
+				self.Sgreen = 0
 			if (Command == 'Set Level'):
-				Sgreen = int(Level/100*255)
-			Domoticz.Debug('DEBUG : Green Color is set %s' % str(Sgreen))
+				self.Sgreen = int(Level/100*255)
+			Domoticz.Debug('DEBUG : Green Color is set %s' % str(self.Sgreen))
 			try:
-				bulb.send_packet(Swhite, Sred, Sgreen, Sblue, Smode, Sspeed)
-			except btle.BTLEException as err:
-				Domoticz.Log('ERROR when setting plug %s with command %s color  %s (code %d)' % (Parameters["Address"], str(Command), str(Level) , err.code))
+				self.Bulb.send_packet(self.Swhite, self.Sred, self.Sgreen, self.Sblue, self.Smode, self.Sspeed, self.handleEffect, self.handleColor)
+			except : 
+				Domoticz.Log("ERROR when setting plug Green")
 
 		if (Unit == 5):
 			if (action == 'On'):
-				Sblue = int((Devices[Unit].LastLevel)/100*255)
+				self.Sblue = int((Devices[Unit].LastLevel)/100*255)
 			if (action == 'Off'):
-				Sblue = 0
+				self.Sblue = 0
 			if (Command == 'Set Level'):
-				Sblue = int(Level/100*255)
-			Domoticz.Debug('DEBUG : Blue Color is set %s' % str(Sblue))
+				self.Sblue = int(Level/100*255)
+			Domoticz.Debug('DEBUG : Blue Color is set %s' % str(self.Sblue))
 			try:
-				bulb.send_packet(Swhite, Sred, Sgreen, Sblue, Smode, Sspeed)
-			except btle.BTLEException as err:
-				Domoticz.Log('ERROR when setting plug %s with command %s color  %s (code %d)' % (Parameters["Address"], str(Command), str(Level) , err.code))
+				self.Bulb.send_packet(self.Swhite, self.Sred, self.Sgreen, self.Sblue, self.Smode, self.Sspeed, self.handleEffect, self.handleColor)
+			except : 
+				Domoticz.Log("ERROR when setting plug Blue")
 
 		if (Unit == 6):
 			if (action == 'On'):
-				Swhite = int((Devices[Unit].LastLevel)/100*255)
+				self.Swhite = int((Devices[Unit].LastLevel)/100*255)
 			if (action == 'Off'):
-				Swhite = 0
+				self.Swhite = 0
 			if (Command == 'Set Level'):
-				Swhite = int(Level/100*255)
-			Domoticz.Debug('DEBUG : White Color is set %s' % str(Swhite))
+				self.Swhite = int(Level/100*255)
+			Domoticz.Debug('DEBUG : White Color is set %s' % str(self.Swhite))
 			try:
-				bulb.send_packet(Swhite, Sred, Sgreen, Sblue, Smode, Sspeed)
-			except btle.BTLEException as err:
-				Domoticz.Log('ERROR when setting plug %s with command %s color  %s (code %d)' % (Parameters["Address"], str(Command), str(Level) , err.code))
+				self.Bulb.send_packet(self.Swhite, self.Sred, self.Sgreen, self.Sblue, self.Smode, self.Sspeed, self.handleEffect, self.handleColor)
+			except : 
+				Domoticz.Log("ERROR when setting plug White")
 
 		if (Unit == 7):
 			if (action == 'On'):
-				Sspeed = int((100-Devices[7].LastLevel)/100*255)
+				self.Sspeed = int((100-Devices[7].LastLevel)/100*255)
 			if (action == 'Off'):
-				Sspeed = 0
+				self.Sspeed = 0
 			if (Command == 'Set Level'):
 				if Level == 100 :
-					Sspeed =1
+					self.Sspeed =1
 				else :
-					Sspeed = int((100-Level)/100*255)
-			Domoticz.Debug('DEBUG : speed is set %s' % str(Sspeed))
+					self.Sspeed = int((100-Level)/100*255)
+			Domoticz.Debug('DEBUG : speed is set %s' % str(self.Sspeed))
 			try:
-				bulb.send_packet(Swhite, Sred, Sgreen, Sblue, Smode, Sspeed)
-			except btle.BTLEException as err:
-				Domoticz.Log('ERROR when setting plug %s with command %s color  %s (code %d)' % (Parameters["Address"], str(Command), str(Level) , err.code))
+				self.Bulb.send_packet(self.Swhite, self.Sred, self.Sgreen, self.Sblue, self.Smode, self.Sspeed, self.handleEffect, self.handleColor)
+			except : 
+				Domoticz.Log("ERROR when setting plug Speed")
 
 		if (Unit == 8):
 			if (action == 'Off'):
 				Domoticz.Debug("Set speed Off")
-				Sspeed = 0
+				self.Sspeed = 0
 				#MajDevice(8,0, 'off')
 			else :
 				if (Level == 0) :
 					Domoticz.Debug("Set speed Slowest")
-					Sspeed = 250
+					self.Sspeed = 250
 					#MajDevice(8,1, 'on')
 				if (Level == 10) :
 					Domoticz.Debug("Set speed slower")
-					Sspeed = Sspeed + 10
-					if Sspeed >= 256 :
-						Sspeed = 255
+					self.Sspeed = self.Sspeed + 10
+					if self.Sspeed >= 256 :
+						self.Sspeed = 255
 					#MajDevice(8,1, 'on')
 				if (Level == 20) :
 					Domoticz.Debug("Set speed faster")
-					Sspeed = Sspeed - 10
-					if Sspeed <= 0 :
-						Sspeed = 1
+					self.Sspeed = self.Sspeed - 10
+					if self.Sspeed <= 0 :
+						self.Sspeed = 1
 					#MajDevice(8,1, 'on')
 				if (Level == 30) :
 					Domoticz.Debug("Set speed fastest")
-					Sspeed = 1
+					self.Sspeed = 1
 					#MajDevice(8,1, 'on')
-		try:
-			bulb.send_packet(Swhite, Sred, Sgreen, Sblue, Smode, Sspeed)
-		except btle.BTLEException as err:
-			Domoticz.Log('ERROR when setting plug %s with command %s color  %s (code %d)' % (Parameters["Address"], str(Command), str(Level) , err.code))
+			try:
+				self.Bulb.send_packet(self.Swhite, self.Sred, self.Sgreen, self.Sblue, self.Smode, self.Sspeed, self.handleEffect, self.handleColor)
+			except : 
+				Domoticz.Log("ERROR when setting plug Speed")
 		
-		CheckStatus()
-		UpdateAllDevice()
+		CheckStatus(self)
+		UpdateAllDevice(self)
 		return True
 
 	def onDisconnect(self, Connection):
 		return
 
 	def onHeartbeat(self):
-		global bulbbattery
-		if handleBattery != 0:
-			bulbbattery = bulb.get_state(handleBattery)
-		if Parameters["Mode3"] == "1":
-			CheckStatus()
-			UpdateAllDevice()
+		if self.isConnect==False :
+			# renseigne le device avec l adresse mac et le numero de l interface BT 
+			#bulb = mipow(Parameters["Address"], Parameters["Mode2"])
+			#se connecte au Candle / Rainbow / Garden
+			try :
+				self.Bulb.connect()
+				self.isConnect=True
+				Domoticz.Log("Is connect.")
+			except :
+				self.isConnect=False
+				Domoticz.Log("Not connect.")
+		if Parameters["Mode3"] == "1" and self.isConnect==True :
+			if self.handleBattery != 0:
+				self.bulbbattery = self.Bulb.get_state(self.handleBattery)
+			CheckStatus(self)
+			UpdateAllDevice(self)
 		return True
 
-	def SetSocketSettings(self, power):
-		return
 
-	def GetSocketSettings(self):
-		return
-
-	def genericPOST(self, commandName):
-		return
- 
 
 global _plugin
 _plugin = BasePlugin()
@@ -438,18 +431,18 @@ def DumpConfigToLog():
 		Domoticz.Debug("Device LastLevel: " + str(Devices[x].LastLevel))
 	return
 
-def MajDevice(Unit, nValue, sValue):
+def MajDevice(self, Unit, nValue, sValue):
 	# Make sure that the Domoticz device still exists (they can be deleted) before updating it 
 	#if (Unit in Devices):
 	#	if (Devices[Unit].nValue != nValue) or (Devices[Unit].sValue != sValue):
 	#		Devices[Unit].Update(nValue, str(sValue))
 	#		Domoticz.Log("Update "+str(nValue)+":'"+str(sValue)+"' ("+Devices[Unit].Name+")")
-	if (len(bulbbattery)==2):
-		InCharge=int(bulbbattery[1])
+	if (len(self.bulbbattery)==2):
+		InCharge=int(self.bulbbattery[1])
 	else:
 		InCharge=0
 	
-	UpdateDevice(Unit, nValue, sValue, Devices[Unit].Image, Devices[Unit].SignalLevel, int(bulbbattery[0]))
+	UpdateDevice(Unit, nValue, sValue, Devices[Unit].Image, Devices[Unit].SignalLevel, int(self.bulbbattery[0]))
 	return
 
 def UpdateDevice(Unit, nValue, sValue, Image, SignalLevel, BatteryLevel):
@@ -460,84 +453,74 @@ def UpdateDevice(Unit, nValue, sValue, Image, SignalLevel, BatteryLevel):
 			Domoticz.Log("Update "+str(nValue)+":'"+str(sValue)+"' SignalLevel:"+str(SignalLevel)+" batteryLevel:'"+str(BatteryLevel)+"%' ("+Devices[Unit].Name+")")
 	return
 
-def UpdateAllDevice():
-	if (Sred != 0 ) or (Sgreen != 0) or (Sblue != 0) or (Swhite != 0) :
-		MajDevice(1,1, 'on')
-		if Sred == 0 :
-			MajDevice(3,0, 'off')
+def UpdateAllDevice(self):
+	if (self.Sred != 0 ) or (self.Sgreen != 0) or (self.Sblue != 0) or (self.Swhite != 0) :
+		MajDevice(self, 1,1, 'on')
+		if self.Sred == 0 :
+			MajDevice(self,3,0, 'off')
 		else:
-			MajDevice(3,1, str(int(Sred/255*100)))
-		if Sgreen == 0 :
-			MajDevice(4,0, 'off')
+			MajDevice(self,3,1, str(int(self.Sred/255*100)))
+		if self.Sgreen == 0 :
+			MajDevice(self,4,0, 'off')
 		else:
-			MajDevice(4,1, str(int(Sgreen/255*100)))
-		if Sblue == 0 :
-			MajDevice(5,0, 'off')
+			MajDevice(self,4,1, str(int(self.Sgreen/255*100)))
+		if self.Sblue == 0 :
+			MajDevice(self,5,0, 'off')
 		else:
-			MajDevice(5,1, str(int(Sblue/255*100)))
-		if Swhite == 0 :
-			MajDevice(6,0, 'off')
+			MajDevice(self,5,1, str(int(self.Sblue/255*100)))
+		if self.Swhite == 0 :
+			MajDevice(self,6,0, 'off')
 		else:
-			MajDevice(6,1, str(int(Swhite/255*100)))
-		if Sspeed == 0 :
-			MajDevice(7,0, 'off')
-			MajDevice(8,0, 'off')
+			MajDevice(self,6,1, str(int(self.Swhite/255*100)))
+		if self.Sspeed == 0 :
+			MajDevice(self,7,0, 'off')
+			MajDevice(self,8,0, 'off')
 		else:
-			MajDevice(7,1, str(int(100-(Sspeed/255*100))))
-			MajDevice(8,1, 'on')
+			MajDevice(self,7,1, str(int(100-(self.Sspeed/255*100))))
+			MajDevice(self,8,1, 'on')
 		
-		if Smode == 0 :
-			if Sspeed == 0 :
-				MajDevice(2,0, 'off')
+		if self.Smode == 0 :
+			if self.Sspeed == 0 :
+				MajDevice(self,2,0, 'off')
 		else:
-			MajDevice(2,1, str((Smode+1)*10))
+			MajDevice(self,2,1, str((self.Smode+1)*10))
 		
-	elif (Sred == 0 ) and (Sgreen == 0) and (Sblue == 0) and (Swhite == 0):
-		MajDevice(1,0, 'off')
-		MajDevice(2,0, 'off')
-		MajDevice(3,0, 'off')
-		MajDevice(4,0, 'off')
-		MajDevice(5,0, 'off')
-		MajDevice(6,0, 'off')
-		MajDevice(7,0, 'off')
-		MajDevice(8,0, 'off')
+	elif (self.Sred == 0 ) and (self.Sgreen == 0) and (self.Sblue == 0) and (self.Swhite == 0):
+		MajDevice(self,1,0, 'off')
+		MajDevice(self,2,0, 'off')
+		MajDevice(self,3,0, 'off')
+		MajDevice(self,4,0, 'off')
+		MajDevice(self,5,0, 'off')
+		MajDevice(self,6,0, 'off')
+		MajDevice(self,7,0, 'off')
+		MajDevice(self,8,0, 'off')
 	return
 
-def CheckStatus():
-	global Sred
-	global Sgreen
-	global Sblue
-	global Swhite
-	global Smode
-	global Sspeed
-	global bulb
-	global handleColor
-	global handleEffect
-	global handleBattery
+def CheckStatus(self):
 	try:
-		bulbstatusColor = bulb.get_state(handleColor)
-		bulbstatusEffect = bulb.get_state(handleEffect)
+		self.bulbstatusColor = self.Bulb.get_state(self.handleColor)
+		self.bulbstatusEffect = self.Bulb.get_state(self.handleEffect)
 
-		if ((int(bulbstatusEffect[4])!=0) and (int(bulbstatusEffect[4])!=255)) or ((int(bulbstatusEffect[6])!=0) and (int(bulbstatusEffect[4])!=255)) or (int(bulbstatusEffect[0]) != 0) or (int(bulbstatusEffect[1]) != 0) or (int(bulbstatusEffect[2]) != 0) or (int(bulbstatusEffect[3]) != 0) :
-			Sred=int(bulbstatusEffect[1])
-			Sgreen=int(bulbstatusEffect[2])
-			Sblue=int(bulbstatusEffect[3])
-			Swhite=int(bulbstatusEffect[0])
-			Sspeed=int(bulbstatusEffect[6])
-			Smode=int(bulbstatusEffect[4])
-			if Smode == 255 or Smode == -1:
-				Smode = 0
-				Sspeed = 0
+		if ((int(self.bulbstatusEffect[4])!=0) and (int(self.bulbstatusEffect[4])!=255)) or ((int(self.bulbstatusEffect[6])!=0) and (int(self.bulbstatusEffect[4])!=255)) or (int(self.bulbstatusEffect[0]) != 0) or (int(self.bulbstatusEffect[1]) != 0) or (int(self.bulbstatusEffect[2]) != 0) or (int(self.bulbstatusEffect[3]) != 0) :
+			self.Sred=int(self.bulbstatusEffect[1])
+			self.Sgreen=int(self.bulbstatusEffect[2])
+			self.Sblue=int(self.bulbstatusEffect[3])
+			self.Swhite=int(self.bulbstatusEffect[0])
+			self.Sspeed=int(self.bulbstatusEffect[6])
+			self.Smode=int(self.bulbstatusEffect[4])
+			if self.Smode == 255 or self.Smode == -1:
+				self.Smode = 0
+				self.Sspeed = 0
 		else :
-			Sred=int(bulbstatusColor[1])
-			Sgreen=int(bulbstatusColor[2])
-			Sblue=int(bulbstatusColor[3])
-			Swhite=int(bulbstatusColor[0])
-			Sspeed=0
-			Smode=0
+			self.Sred=int(self.bulbstatusColor[1])
+			self.Sgreen=int(self.bulbstatusColor[2])
+			self.Sblue=int(self.bulbstatusColor[3])
+			self.Swhite=int(self.bulbstatusColor[0])
+			self.Sspeed=0
+			self.Smode=0
 
 
-	except btle.BTLEException as err:
+	except : 
 		Domoticz.Log("error while get status")
 		#bulb.connect()
 		return
@@ -574,7 +557,7 @@ class mipow:
 	def disconnect(self):
 		self.device.disconnect()
 		
-	def send_packet(self, white, red, green, blue, mode, speed):
+	def send_packet(self, white, red, green, blue, mode, speed, handleEffect, handleColor):
 		if (Parameters["Mode1"]== '1') or (Parameters["Mode1"]== '6') or (Parameters["Mode1"]== '7') or (Parameters["Mode1"]== '8'): # Candles Sphere  spot ?
 			if (speed != 0) :
 				data = bytearray([white, red, green, blue, mode, 0, speed, 0])
